@@ -3,13 +3,16 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import java.sql.Driver;
 
 @Autonomous(name="Gold Auto", group="14465")
-public class goldAuton extends LinearOpMode {
+public class AutonClimbing extends LinearOpMode {
+
+    private DcMotor climber = null;
+
     //lFDrive Motors
     private DcMotor lFDrive = null;
     private DcMotor lRDrive = null;
@@ -19,7 +22,8 @@ public class goldAuton extends LinearOpMode {
     private DcMotor rRDrive = null;
 
     //Arm Motors
-    private DcMotor lowArm = null;
+    private Servo arm1 = null;
+    private Servo arm2 = null;
 
     private ElapsedTime runTime = new ElapsedTime();
 
@@ -33,19 +37,26 @@ public class goldAuton extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+
         lFDrive = hardwareMap.get(DcMotor.class, "LFDrive");
         lRDrive = hardwareMap.get(DcMotor.class, "LRDrive");
 
         rFDrive = hardwareMap.get(DcMotor.class, "RFDrive");
         rRDrive = hardwareMap.get(DcMotor.class, "RRDrive");
 
-        //lowArm = hardwareMap.get(DcMotor.class, "LowArm");
+        arm1 = hardwareMap.get(Servo.class, "Arm1");
+        arm2 = hardwareMap.get(Servo.class, "Arm2");
 
-        rFDrive.setDirection(DcMotor.Direction.REVERSE);
-        rRDrive.setDirection(DcMotor.Direction.REVERSE);
+        climber = hardwareMap.get(DcMotor.class, "Climber");
 
-        telemetry.addData("Status", "Resetting Encoders");
-        telemetry.update();
+        arm2.setDirection(Servo.Direction.REVERSE);
+
+        rFDrive.setDirection(DcMotorSimple.Direction.REVERSE);
+        rRDrive.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        telemetry.addData("Status", "Initialized");
+
+        climber.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         lFDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         lRDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -56,40 +67,36 @@ public class goldAuton extends LinearOpMode {
         lRDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rFDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rRDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        climber.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         telemetry.addData("Path0", "Starting at %7d : %7d", lFDrive.getCurrentPosition(), rFDrive.getCurrentPosition());
         telemetry.update();
 
         waitForStart();
 
-        //climbDown();
-        //encoderDrive(DRIVE_SPEED, 6, 6, 3.0);
-        //encoderDrive(TURN_SPEED, -12, 12, 3.0);
-
         mecanumDrive(1.0, 36,  5.0);
-        //encoderDrive(DRIVE_SPEED, -45, -45, 12.0);
-        //encoderDrive(DRIVE_SPEED, 9, -9, 6.0);
-        //encoderDrive(DRIVE_SPEED, -45, -45, 10.0);
-        //encoderDrive(1.0, -24, 24, 20.0);
-
     }
 
-    public void armControl(double speed, int position) {
-        lowArm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        //if low arm
-        lowArm.setTargetPosition(position);
-        lowArm.setPower(speed);
+    public void climbDown(int targetDistance, double speed, double timeoutS) {
+        if (opModeIsActive()){
+            climber.setTargetPosition(targetDistance);
 
-        while (lowArm.isBusy()) {
+            climber.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
+            runTime.reset();
+            climber.setPower(Math.abs(speed));
+
+            while (opModeIsActive() &&
+                    (runTime.seconds() < timeoutS) &&
+                    (climber.isBusy())) {
+                telemetry.addData("Path2", "Climbing at %7d", climber.getCurrentPosition());
+                telemetry.update();
+            }
+
+            climber.setPower(0);
+
+            climber.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
-        lowArm.setPower(0);
-
-        lowArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-    }
-
-    public void climbDown() {
-
     }
 
     public void mecanumDrive(double strafeSpeed, double strafeDistance, double timeoutS){

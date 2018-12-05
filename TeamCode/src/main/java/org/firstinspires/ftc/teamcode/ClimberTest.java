@@ -52,7 +52,6 @@ public class ClimberTest extends OpMode {
     public void start(){
         runTime.reset();
         climber.setMode(DcMotor.RunMode.RUN_USING_ENCODERS);
-
     }
 
     @Override
